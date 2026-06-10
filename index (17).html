@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dimensionamento canalizzazioni aerauliche · qualsiasi sezione</title>
+<meta name="description" content="Strumento di calcolo per il dimensionamento dei canali aria di qualsiasi forma: sezione, velocità, perdite di carico distribuite e localizzate, prevalenza ventilatore ed energia. Metodo Darcy-Weisbach / Colebrook-White, equivalenze ASHRAE.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f1e9;
+  --paper:#fbfaf5;
+  --ink:#1c2522;
+  --ink-soft:#54605b;
+  --line:#d8d4c4;
+  --line-strong:#b9b3a0;
+  --petrol:#0d5e54;
+  --petrol-d:#073f38;
+  --petrol-l:#e2efeb;
+  --amber:#b06a0a;
+  --amber-l:#fbf0db;
+  --red:#9c2f2a;
+  --red-l:#f8e6e4;
+  --blue:#1f5d8a;
+  --blue-l:#e3eef6;
+  --grid:rgba(13,94,84,.05);
+  --radius:7px;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--sans);color:var(--ink);
+  background-color:var(--bg);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:22px 22px;
+  line-height:1.55;font-size:15px;-webkit-font-smoothing:antialiased;
+}
+.shell{max-width:1080px;margin:0 auto;padding:0 18px 64px}
+
+/* ---- header ---- */
+header.top{padding:30px 0 18px;border-bottom:2px solid var(--ink)}
+.brandline{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.brand h1{font-size:25px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.brand .kicker{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--petrol);margin-bottom:4px}
+.brand .sub{color:var(--ink-soft);font-size:13.5px;margin-top:5px;max-width:600px}
+.headmeta{font-family:var(--mono);font-size:11px;color:var(--ink-soft);text-align:right;line-height:1.7}
+.headmeta b{color:var(--ink);font-weight:600}
+
+/* ---- tabs ---- */
+nav.tabs{display:flex;gap:0;margin:0 0 24px;border-bottom:1px solid var(--line-strong);flex-wrap:wrap}
+.tab{font-family:var(--sans);font-size:13.5px;font-weight:500;padding:11px 17px;border:none;background:none;color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .12s}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--petrol-d);border-bottom-color:var(--petrol);font-weight:600}
+.panel{display:none;animation:fade .2s ease}
+.panel.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ---- layout cards ---- */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;margin-bottom:18px}
+.card > h2{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--petrol-d);margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.card > h2 .num{font-family:var(--mono);font-size:11px;background:var(--petrol);color:#fff;width:20px;height:20px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-weight:600}
+.split{display:grid;grid-template-columns:1fr 280px;gap:22px;align-items:start}
+@media(max-width:760px){.split{grid-template-columns:1fr}}
+
+/* ---- form ---- */
+.row{display:grid;gap:13px;margin-bottom:13px}
+.r2{grid-template-columns:1fr 1fr}
+.r3{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:560px){.r2,.r3{grid-template-columns:1fr}}
+.fld{display:flex;flex-direction:column;gap:5px}
+label{font-size:12px;font-weight:500;color:var(--ink-soft);display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+label .u{font-family:var(--mono);font-size:10.5px;color:var(--line-strong);font-weight:500}
+input,select{font-family:var(--mono);font-size:14px;padding:8px 11px;border:1px solid var(--line-strong);border-radius:5px;background:#fff;color:var(--ink);width:100%;transition:border .12s,box-shadow .12s}
+select{font-family:var(--sans);font-size:13px}
+input:focus,select:focus{outline:none;border-color:var(--petrol);box-shadow:0 0 0 3px var(--petrol-l)}
+input[readonly]{background:var(--bg);color:var(--ink-soft);border-style:dashed}
+
+.btn{font-family:var(--sans);font-size:14px;font-weight:600;padding:10px 22px;border-radius:5px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:background .12s,transform .05s}
+.btn:active{transform:translateY(1px)}
+.btn-go{background:var(--petrol);color:#fff}
+.btn-go:hover{background:var(--petrol-d)}
+.btn-ghost{background:transparent;color:var(--petrol-d);border:1px solid var(--line-strong)}
+.btn-ghost:hover{background:var(--petrol-l);border-color:var(--petrol)}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+
+/* ---- preview svg ---- */
+.preview{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px;position:sticky;top:14px}
+.preview h3{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:10px;text-align:center}
+.preview svg{display:block;width:100%;height:auto;background:
+  linear-gradient(rgba(13,94,84,.06) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(13,94,84,.06) 1px,transparent 1px);
+  background-size:14px 14px;border-radius:4px}
+.pv-stats{margin-top:12px;font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);line-height:1.9}
+.pv-stats .v{color:var(--ink);font-weight:600;float:right}
+
+/* ---- result metrics ---- */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(124px,1fr));gap:12px;margin-top:4px}
+.metric{background:#fff;border:1px solid var(--line);border-left:3px solid var(--line-strong);border-radius:5px;padding:12px 14px}
+.metric .ml{font-size:11px;color:var(--ink-soft);margin-bottom:5px;line-height:1.3}
+.metric .mv{font-family:var(--mono);font-size:21px;font-weight:600;color:var(--ink);letter-spacing:-.02em}
+.metric .mu{font-family:var(--mono);font-size:10.5px;color:var(--line-strong);margin-top:1px}
+.metric.ok{border-left-color:var(--petrol)}
+.metric.ok .mv{color:var(--petrol-d)}
+.metric.warn{border-left-color:var(--amber)}
+.metric.warn .mv{color:var(--amber)}
+.metric.err{border-left-color:var(--red)}
+.metric.err .mv{color:var(--red)}
+.metric.hero{border-left-width:3px;border-left-color:var(--petrol);background:var(--petrol-l)}
+.metric.hero .mv{font-size:24px;color:var(--petrol-d)}
+
+.note{padding:11px 14px;border-radius:5px;font-size:12.5px;margin-top:14px;line-height:1.5;display:none}
+.note.show{display:block}
+.note.ok{background:var(--petrol-l);color:var(--petrol-d);border:1px solid #9fd0c7}
+.note.warn{background:var(--amber-l);color:#7a4a06;border:1px solid #e8c98a}
+.note.err{background:var(--red-l);color:#6e201c;border:1px solid #e3a8a4}
+.note b{font-weight:600}
+
+/* ---- fittings ---- */
+.fit-row{display:grid;grid-template-columns:1fr 78px 60px 34px;gap:9px;align-items:center;margin-bottom:8px}
+.fit-row select{font-size:12px;padding:7px 9px}
+.fit-row input{font-size:13px;padding:7px 9px}
+.del{border:none;background:none;color:var(--line-strong);cursor:pointer;font-size:20px;line-height:1;padding:4px;border-radius:4px}
+.del:hover{color:var(--red);background:var(--red-l)}
+.addbtn{font-family:var(--sans);font-size:12.5px;font-weight:500;color:var(--petrol-d);background:transparent;border:1px dashed var(--line-strong);border-radius:5px;padding:7px 13px;cursor:pointer;margin-top:4px}
+.addbtn:hover{background:var(--petrol-l);border-color:var(--petrol)}
+
+/* ---- tables ---- */
+table.t{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+table.t th{text-align:left;font-weight:600;color:var(--ink-soft);padding:8px 10px;border-bottom:1.5px solid var(--line-strong);font-size:11px;letter-spacing:.03em;text-transform:uppercase}
+table.t td{padding:7px 10px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12px}
+table.t td:first-child{font-family:var(--sans);font-weight:500}
+table.t tr:hover td{background:rgba(13,94,84,.025)}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:20px}
+.tag.ok{background:var(--petrol-l);color:var(--petrol-d)}
+.tag.warn{background:var(--amber-l);color:#7a4a06}
+.tag.err{background:var(--red-l);color:#6e201c}
+
+.tratto-block{background:#fff;border:1px solid var(--line);border-radius:6px;padding:13px 15px;margin-bottom:11px}
+.tratto-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
+.tratto-head .tt{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--petrol-d)}
+
+.hint{font-size:12px;color:var(--ink-soft);line-height:1.55;margin-bottom:12px}
+.hint code{font-family:var(--mono);background:var(--bg);padding:1px 5px;border-radius:3px;font-size:11.5px}
+
+/* ---- info ---- */
+.formula{font-family:var(--mono);font-size:13px;background:#fff;border:1px solid var(--line);border-left:3px solid var(--petrol);border-radius:5px;padding:11px 14px;margin:10px 0;color:var(--ink);overflow-x:auto}
+.refbox{font-size:12.5px;color:var(--ink-soft);line-height:1.7}
+.refbox a{color:var(--petrol-d)}
+
+footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-soft);line-height:1.7;font-family:var(--mono)}
+footer a{color:var(--petrol-d)}
+
+@media print{
+  body{background:#fff}
+  nav.tabs,.btn-row,.addbtn,.del{display:none!important}
+  .panel{display:block!important}
+  .card{break-inside:avoid;border-color:#ccc}
+}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+</style>
+</head>
+<body>
+<div class="shell">
+<h2 class="sr-only">Strumento di dimensionamento dei canali aeraulici di qualsiasi sezione, con calcolo di velocità, perdite di carico ed energia del ventilatore.</h2>
+
+<header class="top">
+  <div class="brandline">
+    <div class="brand">
+      <div class="kicker">Calcolo aeraulico · qualsiasi sezione</div>
+      <h1>Dimensionamento canalizzazioni dell'aria</h1>
+      <p class="sub">Sezione, velocità, perdite di carico distribuite e localizzate, prevalenza del ventilatore ed energia. Engine Darcy-Weisbach con λ di Colebrook-White; equivalenze ASHRAE per sezioni non circolari.</p>
+    </div>
+    <div class="headmeta">
+      <div><b>ρ, ν</b> da T e quota</div>
+      <div><b>λ</b> Colebrook-White</div>
+      <div><b>Dₕ</b> = 4A/P · ogni forma</div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab on" data-t="sezione">Sezione &amp; velocità</button>
+  <button class="tab" data-t="perdite">Perdite di un tratto</button>
+  <button class="tab" data-t="rete">Rete &amp; prevalenza</button>
+  <button class="tab" data-t="energia">Energia ventilatore</button>
+  <button class="tab" data-t="info">Riferimenti</button>
+</nav>
+
+<!-- ===================== TAB SEZIONE ===================== -->
+<section id="p-sezione" class="panel on">
+  <div class="card">
+    <h2><span class="num">1</span> Geometria e fluido</h2>
+    <div class="split">
+      <div>
+        <div class="row r3">
+          <div class="fld">
+            <label>Portata <span class="u">m³/h</span></label>
+            <input type="number" id="sz-Q" value="400" step="10" min="1">
+          </div>
+          <div class="fld">
+            <label>Forma sezione</label>
+            <select id="sz-shape">
+              <option value="circ">Circolare</option>
+              <option value="rett">Rettangolare</option>
+              <option value="oval">Ovale (flat-oval)</option>
+              <option value="gen">Generica (A + P)</option>
+            </select>
+          </div>
+          <div class="fld">
+            <label>Modo di calcolo</label>
+            <select id="sz-mode">
+              <option value="dim">Da dimensioni note</option>
+              <option value="vel">Da velocità target</option>
+              <option value="pc">Da perdita costante R</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- dimensioni dipendenti dalla forma -->
+        <div class="row r3" id="sz-dims"></div>
+
+        <!-- target -->
+        <div class="row r2" id="sz-targets"></div>
+
+        <div class="row r3">
+          <div class="fld">
+            <label>Temperatura aria <span class="u">°C</span></label>
+            <input type="number" id="sz-T" value="20" step="1">
+          </div>
+          <div class="fld">
+            <label>Quota s.l.m. <span class="u">m</span></label>
+            <input type="number" id="sz-alt" value="500" step="50" min="0">
+          </div>
+          <div class="fld">
+            <label>Materiale (rugosità ε)</label>
+            <select id="sz-eps">
+              <option value="0.05">Acciaio zincato liscio · 0,05 mm</option>
+              <option value="0.15" selected>Acciaio zincato std · 0,15 mm</option>
+              <option value="0.003">PVC / plastica liscia · 0,003 mm</option>
+              <option value="0.9">Flessibile spiralato · 0,9 mm</option>
+              <option value="1.5">Flessibile corrugato · 1,5 mm</option>
+              <option value="3.0">Lamiera con isolante interno · 3,0 mm</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-go" onclick="calcSezione()">Calcola sezione</button>
+          <button class="btn btn-ghost" onclick="resetSezione()">Reset</button>
+        </div>
+      </div>
+
+      <!-- live preview -->
+      <div class="preview">
+        <h3>Anteprima sezione (in scala)</h3>
+        <svg id="sz-svg" viewBox="0 0 200 160" role="img" aria-label="Anteprima in scala della sezione del canale"></svg>
+        <div class="pv-stats" id="sz-pv"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="sz-out" style="display:none">
+    <h2><span class="num">2</span> Risultati</h2>
+    <div class="metrics" id="sz-metrics"></div>
+    <div class="note" id="sz-note-vel"></div>
+    <div class="note" id="sz-note-ar"></div>
+    <div class="note" id="sz-note-dn"></div>
+  </div>
+</section>
+
+<!-- ===================== TAB PERDITE ===================== -->
+<section id="p-perdite" class="panel">
+  <div class="card">
+    <h2><span class="num">1</span> Tratto di condotta</h2>
+    <p class="hint">Calcolo della perdita di carico totale di un singolo tratto: <code>ΔP = λ·(L/Dₕ)·½ρv²</code> (distribuita) + <code>Σ ξ·N·½ρv²</code> (localizzata).</p>
+    <div class="row r3">
+      <div class="fld"><label>Portata <span class="u">m³/h</span></label><input type="number" id="pd-Q" value="300" step="10" min="1"></div>
+      <div class="fld"><label>Diametro idraulico Dₕ <span class="u">mm</span></label><input type="number" id="pd-D" value="200" step="5" min="30"></div>
+      <div class="fld"><label>Lunghezza <span class="u">m</span></label><input type="number" id="pd-L" value="12" step="0.5" min="0"></div>
+    </div>
+    <div class="row r3">
+      <div class="fld"><label>Temperatura <span class="u">°C</span></label><input type="number" id="pd-T" value="20" step="1"></div>
+      <div class="fld"><label>Quota s.l.m. <span class="u">m</span></label><input type="number" id="pd-alt" value="500" step="50" min="0"></div>
+      <div class="fld"><label>Rugosità ε</label>
+        <select id="pd-eps">
+          <option value="0.05">Acciaio liscio · 0,05</option>
+          <option value="0.15">Acciaio std · 0,15</option>
+          <option value="0.003">PVC · 0,003</option>
+          <option value="0.9" selected>Flex spiralato · 0,9</option>
+          <option value="1.5">Flex corrugato · 1,5</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">2</span> Raccordi e singolarità (ξ)</h2>
+    <p class="hint">Aggiungi ogni discontinuità: curve, derivazioni, variazioni di sezione, serrande, filtri, imbocchi e sbocchi. Il valore ξ si precompila dal database ed è modificabile.</p>
+    <div id="pd-fits"></div>
+    <button class="addbtn" onclick="addFit()">+ Aggiungi raccordo</button>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-go" onclick="calcPerdite()">Calcola perdite tratto</button>
+    </div>
+  </div>
+
+  <div class="card" id="pd-out" style="display:none">
+    <h2><span class="num">3</span> Risultati</h2>
+    <div class="metrics" id="pd-metrics"></div>
+    <div id="pd-detail"></div>
+  </div>
+</section>
+
+<!-- ===================== TAB RETE ===================== -->
+<section id="p-rete" class="panel">
+  <div class="card">
+    <h2><span class="num">1</span> Tratti della rete</h2>
+    <p class="hint">Inserisci ogni tratto del percorso. La <b>prevalenza richiesta al ventilatore</b> è la somma delle perdite del percorso critico (ΔP cumulata massima). Per ogni tratto, <code>Σ ξ·N</code> è la somma dei coefficienti dei raccordi presenti.</p>
+    <div class="row r2">
+      <div class="fld"><label>Temperatura rete <span class="u">°C</span></label><input type="number" id="rt-T" value="20" step="1"></div>
+      <div class="fld"><label>Quota s.l.m. <span class="u">m</span></label><input type="number" id="rt-alt" value="500" step="50" min="0"></div>
+    </div>
+    <div id="rt-list"></div>
+    <button class="addbtn" onclick="addTratto()">+ Aggiungi tratto</button>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-go" onclick="calcRete()">Calcola rete</button>
+      <button class="btn btn-ghost" onclick="toEnergia()">Porta ΔP all'analisi energetica →</button>
+    </div>
+  </div>
+
+  <div class="card" id="rt-out" style="display:none">
+    <h2><span class="num">2</span> Esito</h2>
+    <div class="metrics" id="rt-metrics"></div>
+    <div style="overflow-x:auto;margin-top:14px">
+      <table class="t">
+        <thead><tr><th>Tratto</th><th>Q</th><th>Dₕ</th><th>L</th><th>v</th><th>ΔP distr.</th><th>ΔP loc.</th><th>ΔP tot</th><th>Cumul.</th><th>Velocità</th></tr></thead>
+        <tbody id="rt-tbody"></tbody>
+      </table>
+    </div>
+    <div class="note" id="rt-note"></div>
+  </div>
+</section>
+
+<!-- ===================== TAB ENERGIA ===================== -->
+<section id="p-energia" class="panel">
+  <div class="card">
+    <h2><span class="num">1</span> Dati ventilatore ed esercizio</h2>
+    <p class="hint">Dalla prevalenza e portata si ricava la potenza assorbita, l'energia annua, lo <b>SFP</b> (Specific Fan Power) e il costo. Utile per la valutazione SEE/EPC e per il confronto con i limiti EN 13779.</p>
+    <div class="row r3">
+      <div class="fld"><label>Portata <span class="u">m³/h</span></label><input type="number" id="en-Q" value="400" step="10" min="1"></div>
+      <div class="fld"><label>Prevalenza ΔP <span class="u">Pa</span></label><input type="number" id="en-dp" value="180" step="5" min="0"></div>
+      <div class="fld"><label>Rendimento totale η <span class="u">0–1</span></label><input type="number" id="en-eta" value="0.6" step="0.05" min="0.1" max="0.9"></div>
+    </div>
+    <div class="row r3">
+      <div class="fld"><label>Ore di esercizio / anno <span class="u">h</span></label><input type="number" id="en-h" value="4000" step="100" min="1"></div>
+      <div class="fld"><label>Costo energia <span class="u">€/kWh</span></label><input type="number" id="en-cost" value="0.25" step="0.01" min="0"></div>
+      <div class="fld"><label>Fattore emissione <span class="u">kg CO₂/kWh</span></label><input type="number" id="en-co2" value="0.28" step="0.01" min="0"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-go" onclick="calcEnergia()">Calcola energia</button>
+    </div>
+  </div>
+
+  <div class="card" id="en-out" style="display:none">
+    <h2><span class="num">2</span> Risultati</h2>
+    <div class="metrics" id="en-metrics"></div>
+    <div class="note" id="en-note"></div>
+  </div>
+</section>
+
+<!-- ===================== TAB INFO ===================== -->
+<section id="p-info" class="panel">
+  <div class="card">
+    <h2>Metodo di calcolo</h2>
+    <p class="hint">Per qualsiasi forma si lavora su area <code>A</code> e perimetro bagnato <code>P</code>. La velocità deriva dalla continuità, la perdita dal diametro idraulico.</p>
+    <div class="formula">v = Q / A &nbsp;·&nbsp; Dₕ = 4·A / P &nbsp;·&nbsp; Re = v·Dₕ / ν</div>
+    <div class="formula">1/√λ = −2·log₁₀( ε/(3,7·Dₕ) + 2,51/(Re·√λ) )  → Colebrook-White</div>
+    <div class="formula">ΔP_distr = λ·(L/Dₕ)·½ρv² &nbsp;·&nbsp; ΔP_loc = Σ ξ·N·½ρv²</div>
+    <p class="hint" style="margin-top:10px">Densità corretta per temperatura e quota: <code>ρ = p(h)/(R·T)</code> con <code>p(h)=101325·(1−2,25577·10⁻⁵·h)^5,2559</code> (atmosfera ISA), R = 287,05 J/(kg·K). Viscosità con legge di Sutherland.</p>
+  </div>
+
+  <div class="card">
+    <h2>Diametro equivalente vs idraulico</h2>
+    <p class="hint"><b>Diametro idraulico</b> Dₕ = 4A/P: lunghezza caratteristica fisica, usata per Reynolds e Darcy-Weisbach su ogni sezione (per il cerchio Dₕ = D).<br><b>Diametro equivalente</b> Dₑ: diametro del condotto circolare che, a pari portata, dà la stessa perdita di carico — serve per scegliere il DN commerciale e leggere gli abachi. Le due grandezze non coincidono.</p>
+    <div class="formula">Rettangolare (Huebscher):  Dₑ = 1,30·(a·b)^0,625 / (a+b)^0,25</div>
+    <div class="formula">Flat-oval (Heyt-Diaz):  Dₑ = 1,55·A^0,625 / P^0,25</div>
+  </div>
+
+  <div class="card">
+    <h2>Limiti di velocità consigliati</h2>
+    <table class="t">
+      <thead><tr><th>Condotto</th><th>Uso</th><th>v (m/s)</th></tr></thead>
+      <tbody>
+        <tr><td>Principale</td><td>Residenziale</td><td>3 – 5</td></tr>
+        <tr><td>Principale</td><td>Commerciale</td><td>5 – 8</td></tr>
+        <tr><td>Secondario / distribuzione</td><td>Residenziale</td><td>2 – 4</td></tr>
+        <tr><td>Secondario / distribuzione</td><td>Commerciale</td><td>3 – 6</td></tr>
+        <tr><td>Bocchette / diffusori</td><td>Residenziale</td><td>≤ 2</td></tr>
+        <tr><td>Bocchette / diffusori</td><td>Commerciale</td><td>2 – 4</td></tr>
+      </tbody>
+    </table>
+    <p class="hint" style="margin-top:10px">Perdita di carico specifica di riferimento per un sistema ben progettato: <b>0,8 Pa/m</b>; a <b>0,4 Pa/m</b> aumentano sezioni e costi (~+15%) ma la caduta totale si dimezza, con risparmio del 15–20% sui costi di ventilazione. Rapporto di forma rettangolari consigliato ≤ 4:1 (idealmente ≤ 3:1).</p>
+  </div>
+
+  <div class="card">
+    <h2>Coefficienti ξ raccordi (indicativi)</h2>
+    <table class="t"><thead><tr><th>Raccordo</th><th>ξ</th></tr></thead><tbody id="xi-tbody"></tbody></table>
+  </div>
+
+  <div class="card">
+    <h2>Classi SFP — EN 13779 (indicative)</h2>
+    <table class="t"><thead><tr><th>Classe</th><th>SFP [W/(m³/s)]</th></tr></thead>
+      <tbody>
+        <tr><td>SFP 1</td><td>&lt; 500</td></tr>
+        <tr><td>SFP 2</td><td>500 – 750</td></tr>
+        <tr><td>SFP 3</td><td>750 – 1250</td></tr>
+        <tr><td>SFP 4</td><td>1250 – 2000</td></tr>
+        <tr><td>SFP 5</td><td>2000 – 3000</td></tr>
+        <tr><td>SFP 6</td><td>3000 – 4500</td></tr>
+        <tr><td>SFP 7</td><td>&gt; 4500</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Fonti</h2>
+    <p class="refbox">
+      Caleffi — <i>I criteri di dimensionamento delle canalizzazioni aerauliche</i>, Idraulica n. 62 (Ingg. M. Tomasoni, E. Cremona).<br>
+      ASHRAE Handbook of Fundamentals — Duct Design (equazioni di equivalenza Huebscher e Heyt-Diaz).<br>
+      EN 13779 / EN 16798 — ventilazione degli edifici, classi SFP.<br>
+      Atmosfera tipo ISO 2533 (ISA) per la correzione di densità in quota.
+    </p>
+  </div>
+</section>
+
+<div class="btn-row" style="margin-top:6px">
+  <button class="btn btn-ghost" onclick="window.print()">Stampa / PDF</button>
+  <button class="btn btn-ghost" onclick="exportJSON()">Esporta dati (JSON)</button>
+  <button class="btn btn-ghost" onclick="document.getElementById('imp').click()">Importa JSON</button>
+  <input type="file" id="imp" accept=".json" style="display:none" onchange="importJSON(event)">
+</div>
+
+<footer>
+  Strumento di calcolo aeraulico · sezioni circolari, rettangolari, ovali e generiche · Darcy-Weisbach + Colebrook-White<br>
+  I risultati sono indicativi e vanno verificati dal progettista. Database ξ e limiti di velocità da letteratura tecnica (Caleffi / ASHRAE).
+</footer>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- costanti & DB ---------- */
+const R_GAS = 287.05;
+const FITTINGS = [
+  {n:"Curva 90° circolare (r/D=1)", x:0.24},
+  {n:"Curva 90° circolare (r/D=0,5)", x:0.47},
+  {n:"Curva 45° circolare", x:0.12},
+  {n:"Curva 30° circolare", x:0.07},
+  {n:"Curva 90° rettangolare (r/D=1)", x:0.33},
+  {n:"Curva 90° rettangolare (r/D=0,5)", x:0.57},
+  {n:"Curva a squadra senza deflettori", x:1.20},
+  {n:"Curva a squadra con deflettori", x:0.35},
+  {n:"Derivazione a T — ramo dritto", x:0.10},
+  {n:"Derivazione a T — ramo deviato", x:0.90},
+  {n:"Derivazione a Y (45°)", x:0.35},
+  {n:"Allargamento progressivo (cono ≤30°)", x:0.07},
+  {n:"Allargamento brusco", x:1.00},
+  {n:"Restringimento progressivo", x:0.05},
+  {n:"Restringimento brusco", x:0.50},
+  {n:"Imbocco da plenum / bordo arrotondato", x:0.50},
+  {n:"Sbocco in ambiente (diffusore/bocchetta)", x:1.00},
+  {n:"Serranda di taratura aperta", x:0.20},
+  {n:"Filtro piano standard", x:0.60},
+  {n:"Batteria di scambio (2 ranghi)", x:0.40},
+  {n:"Silenziatore a setti", x:0.50},
+  {n:"Raccordo flessibile (per metro)", x:0.30}
+];
+const DN_CIRC=[63,75,80,90,100,112,125,140,150,160,180,200,224,250,280,315,355,400,450,500,560,630,710,800];
+
+/* ---------- fisica ---------- */
+function rhoAir(T,alt){
+  const p = 101325*Math.pow(1-2.25577e-5*alt,5.2559);
+  return p/(R_GAS*(273.15+T));
+}
+function nuAir(T,rho){
+  const Tk=273.15+T;
+  const mu=1.716e-5*Math.pow(Tk/273.15,1.5)*(273.15+110.4)/(Tk+110.4);
+  return mu/rho;
+}
+function lambdaCW(Re,eps_m,Dh_m){
+  if(Re<2300) return 64/Math.max(Re,1);
+  const rr=eps_m/Dh_m;
+  let l=0.25/Math.pow(Math.log10(rr/3.7+5.74/Math.pow(Re,0.9)),2); // Swamee-Jain init
+  for(let i=0;i<60;i++){
+    const f=1/Math.pow(-2*Math.log10(rr/3.7+2.51/(Re*Math.sqrt(l))),2);
+    if(Math.abs(f-l)<1e-9)break; l=f;
+  }
+  return l;
+}
+function regime(Re){return Re<2300?"laminare":Re<4000?"transitorio":"turbolento";}
+
+/* geometrie -> {A (m2), P (m), De (m, equivalente), label} */
+function geomCirc(D_m){const A=Math.PI*D_m*D_m/4;return{A,P:Math.PI*D_m,De:D_m};}
+function geomRett(a_m,b_m){
+  const A=a_m*b_m,P=2*(a_m+b_m);
+  const De=1.30*Math.pow(a_m*b_m,0.625)/Math.pow(a_m+b_m,0.25);
+  return{A,P,De};
+}
+function geomOval(min_m,maj_m){
+  if(maj_m<min_m){const t=maj_m;maj_m=min_m;min_m=t;}
+  const a=min_m,M=maj_m;
+  const A=Math.PI*a*a/4 + a*(M-a);
+  const P=Math.PI*a + 2*(M-a);
+  const De=1.55*Math.pow(A,0.625)/Math.pow(P,0.25);
+  return{A,P,De};
+}
+function geomGen(A,P){const De=1.55*Math.pow(A,0.625)/Math.pow(P,0.25);return{A,P,De};}
+
+/* ---------- UI tabs ---------- */
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  document.getElementById('p-'+b.dataset.t).classList.add('on');
+});
+
+/* ---------- TAB 1: campi dinamici per forma ---------- */
+function renderDims(){
+  const s=document.getElementById('sz-shape').value;
+  const wrap=document.getElementById('sz-dims');
+  let h='';
+  if(s==='circ') h=`<div class="fld"><label>Diametro D <span class="u">mm</span></label><input type="number" id="d-D" value="200" step="5" min="30" oninput="drawPreview()"></div>`;
+  else if(s==='rett') h=`<div class="fld"><label>Lato a <span class="u">mm</span></label><input type="number" id="d-a" value="300" step="10" min="50" oninput="drawPreview()"></div>
+    <div class="fld"><label>Lato b <span class="u">mm</span></label><input type="number" id="d-b" value="200" step="10" min="50" oninput="drawPreview()"></div>`;
+  else if(s==='oval') h=`<div class="fld"><label>Asse minore <span class="u">mm</span></label><input type="number" id="d-min" value="160" step="5" min="40" oninput="drawPreview()"></div>
+    <div class="fld"><label>Asse maggiore <span class="u">mm</span></label><input type="number" id="d-maj" value="320" step="10" min="60" oninput="drawPreview()"></div>`;
+  else h=`<div class="fld"><label>Area sezione A <span class="u">cm²</span></label><input type="number" id="d-A" value="314" step="1" min="1" oninput="drawPreview()"></div>
+    <div class="fld"><label>Perimetro P <span class="u">cm</span></label><input type="number" id="d-P" value="63" step="0.5" min="1" oninput="drawPreview()"></div>`;
+  wrap.innerHTML=h;
+  renderTargets();
+  drawPreview();
+}
+function renderTargets(){
+  const m=document.getElementById('sz-mode').value;
+  const wrap=document.getElementById('sz-targets');
+  const dimsEls=document.querySelectorAll('#sz-dims input');
+  if(m==='dim'){ wrap.innerHTML=''; dimsEls.forEach(e=>e.disabled=false); return; }
+  dimsEls.forEach(e=>e.disabled=true); // in modo target le dimensioni sono ricavate
+  if(m==='vel') wrap.innerHTML=`<div class="fld"><label>Velocità target <span class="u">m/s</span></label><input type="number" id="t-v" value="3.5" step="0.1" min="0.5" max="15"></div>
+    <div class="fld"><label>Vincolo (solo rett/oval)</label><select id="t-fix"><option value="">— libero —</option><option value="a">Fissa lato/asse minore</option></select></div>`;
+  else wrap.innerHTML=`<div class="fld"><label>Perdita specifica R <span class="u">Pa/m</span></label><input type="number" id="t-R" value="0.8" step="0.1" min="0.1"></div>`;
+}
+document.getElementById('sz-shape').onchange=renderDims;
+document.getElementById('sz-mode').onchange=renderTargets;
+
+/* ---------- preview SVG ---------- */
+function getDims(){
+  const s=document.getElementById('sz-shape').value;
+  try{
+    if(s==='circ'){const D=+document.getElementById('d-D').value/1000;return{s,...geomCirc(D),D};}
+    if(s==='rett'){const a=+document.getElementById('d-a').value/1000,b=+document.getElementById('d-b').value/1000;return{s,...geomRett(a,b),a,b};}
+    if(s==='oval'){const mi=+document.getElementById('d-min').value/1000,ma=+document.getElementById('d-maj').value/1000;return{s,...geomOval(mi,ma),mi,ma};}
+    const A=+document.getElementById('d-A').value/1e4,P=+document.getElementById('d-P').value/100;return{s,...geomGen(A,P),A,P};
+  }catch(e){return null;}
+}
+function drawPreview(){
+  const g=getDims(); const svg=document.getElementById('sz-svg'); const pv=document.getElementById('sz-pv');
+  if(!g){svg.innerHTML='';return;}
+  const W=200,H=160,cx=W/2,cy=H/2,pad=24;
+  let inner='';
+  const col='var(--petrol)';
+  if(g.s==='circ'){
+    const r=Math.min(W,H)/2-pad;
+    inner=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${col}" stroke-width="2.5"/>
+      <line x1="${cx-r}" y1="${cy}" x2="${cx+r}" y2="${cy}" stroke="${col}" stroke-dasharray="3 3" stroke-width="1"/>
+      <text x="${cx}" y="${cy-5}" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--ink-soft)">Ø ${(g.D*1000).toFixed(0)}</text>`;
+  } else if(g.s==='rett'){
+    const ratio=g.b/g.a, maxW=W-2*pad, maxH=H-2*pad;
+    let w=maxW,h=maxW*ratio; if(h>maxH){h=maxH;w=maxH/ratio;}
+    inner=`<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" fill="none" stroke="${col}" stroke-width="2.5"/>
+      <text x="${cx}" y="${cy-h/2-4}" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--ink-soft)">${(g.a*1000).toFixed(0)}</text>
+      <text x="${cx+w/2+4}" y="${cy+3}" text-anchor="start" font-size="9" font-family="monospace" fill="var(--ink-soft)">${(g.b*1000).toFixed(0)}</text>`;
+  } else if(g.s==='oval'){
+    const ratio=g.mi/g.ma, maxW=W-2*pad;
+    let w=maxW,h=maxW*ratio; const rr=h/2;
+    inner=`<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="${rr}" fill="none" stroke="${col}" stroke-width="2.5"/>
+      <text x="${cx}" y="${cy-h/2-4}" text-anchor="middle" font-size="9" font-family="monospace" fill="var(--ink-soft)">${(g.ma*1000).toFixed(0)} × ${(g.mi*1000).toFixed(0)}</text>`;
+  } else {
+    const r=Math.min(W,H)/2-pad-6;
+    inner=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${col}" stroke-width="2" stroke-dasharray="5 4"/>
+      <text x="${cx}" y="${cy+3}" text-anchor="middle" font-size="8.5" font-family="monospace" fill="var(--ink-soft)">A,P generici</text>`;
+  }
+  svg.innerHTML=inner;
+  const Dh=4*g.A/g.P;
+  pv.innerHTML=`Area<span class="v">${(g.A*1e4).toFixed(0)} cm²</span><br>
+    Perimetro<span class="v">${(g.P*100).toFixed(1)} cm</span><br>
+    Dₕ idraulico<span class="v">${(Dh*1000).toFixed(0)} mm</span><br>
+    Dₑ equivalente<span class="v">${(g.De*1000).toFixed(0)} mm</span>`;
+}
+
+/* ---------- TAB 1 calcolo ---------- */
+function calcSezione(){
+  const Q=+document.getElementById('sz-Q').value/3600;
+  const mode=document.getElementById('sz-mode').value;
+  const shape=document.getElementById('sz-shape').value;
+  const T=+document.getElementById('sz-T').value, alt=+document.getElementById('sz-alt').value;
+  const eps=+document.getElementById('sz-eps').value/1000;
+  const rho=rhoAir(T,alt), nu=nuAir(T,rho);
+  let g;
+
+  if(mode==='dim'){
+    g=getDims(); if(!g)return;
+  } else if(mode==='vel'){
+    const vt=+document.getElementById('t-v').value; const Areq=Q/vt;
+    if(shape==='circ'){const D=Math.sqrt(4*Areq/Math.PI);g={s:'circ',...geomCirc(D),D};document.getElementById('d-D').value=Math.round(D*1000);}
+    else if(shape==='rett'){
+      const fix=document.getElementById('t-fix').value;
+      let a;
+      if(fix==='a'){a=+document.getElementById('d-a').value/1000;}
+      else{a=Math.sqrt(Areq/1.5);} // proporzione di default 1.5:1
+      const b=Areq/a; g={s:'rett',...geomRett(a,b),a,b};
+      document.getElementById('d-a').value=Math.round(a*1000);document.getElementById('d-b').value=Math.round(b*1000);
+    } else if(shape==='oval'){
+      let mi=+document.getElementById('d-min').value/1000;
+      const ma=(Areq-Math.PI*mi*mi/4)/mi + mi;
+      g={s:'oval',...geomOval(mi,ma),mi,ma};
+      document.getElementById('d-maj').value=Math.round(ma*1000);
+    } else { // generica: ricava cerchio equivalente
+      const D=Math.sqrt(4*Areq/Math.PI); g={s:'gen',...geomGen(Areq,Math.PI*D),A:Areq,P:Math.PI*D};
+      document.getElementById('d-A').value=Math.round(Areq*1e4);document.getElementById('d-P').value=(Math.PI*D*100).toFixed(1);
+    }
+  } else { // perdita costante R -> itera diametro circolare equivalente
+    const Rt=+document.getElementById('t-R').value;
+    let D=0.12;
+    for(let i=0;i<200;i++){
+      const A=Math.PI*D*D/4,v=Q/A,Re=v*D/nu,l=lambdaCW(Re,eps,D);
+      const Rc=l/D*0.5*rho*v*v;
+      if(Math.abs(Rc-Rt)/Rt<5e-4)break;
+      D*=Math.pow(Rc/Rt,0.18);
+      if(D<0.04)D=0.04; if(D>2)D=2;
+    }
+    g={s:'circ',...geomCirc(D),D};
+    if(shape==='circ')document.getElementById('d-D').value=Math.round(D*1000);
+  }
+
+  const Dh=4*g.A/g.P, v=Q/g.A, Re=v*Dh/nu, lam=lambdaCW(Re,eps,Dh);
+  const R=lam/Dh*0.5*rho*v*v;
+  drawPreview();
+
+  // metrics
+  const Dn=DN_CIRC.find(d=>d>=g.De*1000)||DN_CIRC[DN_CIRC.length-1];
+  const M=document.getElementById('sz-metrics');
+  let vcls=v<1.5?'warn':v>6?'err':v>4?'warn':'ok';
+  M.innerHTML=`
+    ${metric('Velocità aria',v.toFixed(2),'m/s',vcls)}
+    ${metric('Dₕ idraulico',(Dh*1000).toFixed(0),'mm','')}
+    ${metric('Dₑ equivalente',(g.De*1000).toFixed(0),'mm','')}
+    ${metric('Sezione netta',(g.A*1e4).toFixed(0),'cm²','')}
+    ${metric('Perdita specifica',R.toFixed(2),'Pa/m','')}
+    ${metric('Reynolds',Math.round(Re).toLocaleString('it'),regime(Re),'')}
+    ${metric('λ attrito',lam.toFixed(4),'—','')}
+    ${metric('ρ aria',rho.toFixed(3),'kg/m³','')}`;
+  document.getElementById('sz-out').style.display='block';
+
+  // note velocità
+  const nv=document.getElementById('sz-note-vel');
+  if(v<1.5){nv.className='note warn show';nv.innerHTML='<b>Velocità bassa</b> ('+v.toFixed(2)+' m/s): rischio di sedimentazione e bassa resa. Considera una sezione minore.';}
+  else if(v>6){nv.className='note err show';nv.innerHTML='<b>Velocità elevata</b> ('+v.toFixed(2)+' m/s): rumore e vibrazioni probabili. Ammissibile solo in tratti principali commerciali/industriali.';}
+  else if(v>4){nv.className='note warn show';nv.innerHTML='Velocità ('+v.toFixed(2)+' m/s) nel range commerciale: verifica l\'idoneità per la destinazione e l\'acustica.';}
+  else{nv.className='note ok show';nv.innerHTML='<b>Velocità nei limiti</b> ('+v.toFixed(2)+' m/s): adatta a uso residenziale/civile con buon comfort acustico.';}
+
+  // aspect ratio
+  const nar=document.getElementById('sz-note-ar');
+  if(g.s==='rett'){
+    const ar=Math.max(g.a,g.b)/Math.min(g.a,g.b);
+    if(ar>4){nar.className='note err show';nar.innerHTML='<b>Rapporto di forma ${0}</b>'.replace('${0}',ar.toFixed(1)+':1')+': oltre 4:1 crescono attrito, materiale e dispersioni. Riduci verso ≤ 3:1.';}
+    else if(ar>3){nar.className='note warn show';nar.innerHTML='Rapporto di forma '+ar.toFixed(1)+':1: accettabile ma vicino al limite consigliato (≤ 3:1 ideale).';}
+    else{nar.className='note ok show';nar.innerHTML='Rapporto di forma '+ar.toFixed(1)+':1: ottimale.';}
+  } else nar.className='note';
+
+  const nd=document.getElementById('sz-note-dn');
+  nd.className='note ok show';
+  nd.innerHTML='<b>DN circolare consigliato:</b> Ø '+Dn+' mm (serie UNI), come equivalente di pari perdita. Verifica la disponibilità del produttore.';
+
+  saveState();
+}
+function metric(l,v,u,cls){return `<div class="metric ${cls}"><div class="ml">${l}</div><div class="mv">${v}</div><div class="mu">${u}</div></div>`;}
+function resetSezione(){document.getElementById('sz-out').style.display='none';}
+
+/* ---------- TAB 2: perdite ---------- */
+let fitN=0;
+function addFit(val){
+  const i=fitN++;
+  const opts=FITTINGS.map((f,k)=>`<option value="${k}">${f.n} (ξ=${f.x})</option>`).join('');
+  const d=document.createElement('div');d.className='fit-row';d.id='fit'+i;
+  d.innerHTML=`<select id="ft${i}" onchange="document.getElementById('fx${i}').value=FITTINGS[this.value].x">${opts}</select>
+    <input type="number" id="fx${i}" value="${FITTINGS[0].x}" step="0.01" min="0">
+    <input type="number" id="fn${i}" value="1" step="1" min="1">
+    <button class="del" title="rimuovi" onclick="document.getElementById('fit${i}').remove()">×</button>`;
+  document.getElementById('pd-fits').appendChild(d);
+}
+function calcPerdite(){
+  const Q=+document.getElementById('pd-Q').value/3600;
+  const D=+document.getElementById('pd-D').value/1000;
+  const L=+document.getElementById('pd-L').value;
+  const T=+document.getElementById('pd-T').value, alt=+document.getElementById('pd-alt').value;
+  const eps=+document.getElementById('pd-eps').value/1000;
+  const rho=rhoAir(T,alt),nu=nuAir(T,rho);
+  const A=Math.PI*D*D/4,v=Q/A,Re=v*D/nu,lam=lambdaCW(Re,eps,D),Pd=0.5*rho*v*v;
+  const dPd=lam/D*L*Pd;
+  let dPl=0,detail='';
+  document.querySelectorAll('[id^="fit"]').forEach(r=>{
+    const i=r.id.replace('fit','');
+    const x=+document.getElementById('fx'+i).value,n=+document.getElementById('fn'+i).value;
+    const idx=+document.getElementById('ft'+i).value,dp=x*n*Pd;dPl+=dp;
+    detail+=`<tr><td>${FITTINGS[idx].n}</td><td>${n}</td><td>${x}</td><td>${dp.toFixed(2)}</td></tr>`;
+  });
+  const tot=dPd+dPl;
+  document.getElementById('pd-metrics').innerHTML=`
+    ${metric('Velocità',v.toFixed(2),'m/s',v>6?'err':v>4?'warn':'ok')}
+    ${metric('Pressione dinamica',Pd.toFixed(2),'Pa','')}
+    ${metric('Reynolds',Math.round(Re).toLocaleString('it'),regime(Re),'')}
+    ${metric('λ',lam.toFixed(4),'—','')}
+    ${metric('ΔP distribuite',dPd.toFixed(2),'Pa','')}
+    ${metric('ΣΔP localizzate',dPl.toFixed(2),'Pa','')}
+    ${metric('ΔP totale',tot.toFixed(2),'Pa','hero')}`;
+  document.getElementById('pd-detail').innerHTML = detail?`<div style="overflow-x:auto;margin-top:14px"><table class="t"><thead><tr><th>Raccordo</th><th>N</th><th>ξ</th><th>ΔP (Pa)</th></tr></thead><tbody>${detail}</tbody></table></div>`:'';
+  document.getElementById('pd-out').style.display='block';
+  saveState();
+}
+
+/* ---------- TAB 3: rete ---------- */
+let trN=0;
+function addTratto(p){
+  const i=trN++;
+  const d=document.createElement('div');d.className='tratto-block';d.id='tr'+i;
+  d.innerHTML=`<div class="tratto-head"><span class="tt">Tratto ${i+1}</span>
+    <button class="del" onclick="document.getElementById('tr${i}').remove()">×</button></div>
+    <div class="row r3" style="margin-bottom:9px">
+      <div class="fld"><label>Q <span class="u">m³/h</span></label><input type="number" id="trQ${i}" value="${(p&&p.Q)||300}" step="10"></div>
+      <div class="fld"><label>Dₕ <span class="u">mm</span></label><input type="number" id="trD${i}" value="${(p&&p.D)||200}" step="5"></div>
+      <div class="fld"><label>L <span class="u">m</span></label><input type="number" id="trL${i}" value="${(p&&p.L)||8}" step="0.5"></div>
+    </div>
+    <div class="row r2">
+      <div class="fld"><label>Σ ξ·N raccordi</label><input type="number" id="trX${i}" value="${(p&&p.X)||0.5}" step="0.05"></div>
+      <div class="fld"><label>Rugosità ε</label><select id="trE${i}">
+        <option value="0.05">Acciaio liscio · 0,05</option>
+        <option value="0.15" selected>Acciaio std · 0,15</option>
+        <option value="0.9">Flex · 0,9</option>
+        <option value="1.5">Flex corr. · 1,5</option></select></div>
+    </div>`;
+  document.getElementById('rt-list').appendChild(d);
+}
+function calcRete(){
+  const T=+document.getElementById('rt-T').value, alt=+document.getElementById('rt-alt').value;
+  const rho=rhoAir(T,alt),nu=nuAir(T,rho);
+  const tb=document.getElementById('rt-tbody');tb.innerHTML='';
+  let cumul=0,maxV=0,rows=[];
+  document.querySelectorAll('[id^="tr"]').forEach(t=>{
+    if(!/^tr\d+$/.test(t.id))return;
+    const i=t.id.replace('tr','');
+    const Q=+document.getElementById('trQ'+i).value/3600;
+    const D=+document.getElementById('trD'+i).value/1000;
+    const L=+document.getElementById('trL'+i).value;
+    const X=+document.getElementById('trX'+i).value;
+    const eps=+document.getElementById('trE'+i).value/1000;
+    const A=Math.PI*D*D/4,v=Q/A,Re=v*D/nu,lam=lambdaCW(Re,eps,D),Pd=0.5*rho*v*v;
+    const dPd=lam/D*L*Pd,dPl=X*Pd,dPt=dPd+dPl;
+    cumul+=dPt; if(v>maxV)maxV=v;
+    const vc=v<2?'warn':v>6?'err':'ok';
+    rows.push(`<tr><td>T${+i+1}</td><td>${Math.round(Q*3600)}</td><td>${Math.round(D*1000)}</td><td>${L}</td><td>${v.toFixed(2)}</td><td>${dPd.toFixed(2)}</td><td>${dPl.toFixed(2)}</td><td>${dPt.toFixed(2)}</td><td>${cumul.toFixed(1)}</td><td><span class="tag ${vc}">${v.toFixed(1)}</span></td></tr>`);
+  });
+  tb.innerHTML=rows.join('');
+  document.getElementById('rt-metrics').innerHTML=`
+    ${metric('Prevalenza richiesta',cumul.toFixed(1),'Pa','hero')}
+    ${metric('Tratti',rows.length,'n°','')}
+    ${metric('Velocità max',maxV.toFixed(2),'m/s',maxV>6?'err':maxV>4?'warn':'ok')}`;
+  document.getElementById('rt-out').style.display='block';
+  const n=document.getElementById('rt-note');n.className='note ok show';
+  n.innerHTML='La prevalenza è la perdita cumulata del percorso. Aggiungi un margine di sicurezza (10–15%) e somma le perdite dei componenti d\'unità (filtri, recuperatore, batterie) non già inseriti.';
+  window._lastPrev=cumul;
+  saveState();
+}
+function toEnergia(){
+  const p=window._lastPrev; if(p){document.getElementById('en-dp').value=p.toFixed(0);}
+  document.querySelector('.tab[data-t="energia"]').click();
+}
+
+/* ---------- TAB 4: energia ---------- */
+function calcEnergia(){
+  const Q=+document.getElementById('en-Q').value/3600;
+  const dp=+document.getElementById('en-dp').value;
+  const eta=+document.getElementById('en-eta').value;
+  const h=+document.getElementById('en-h').value;
+  const cost=+document.getElementById('en-cost').value;
+  const co2=+document.getElementById('en-co2').value;
+  const Pair=Q*dp, Pel=Pair/eta;
+  const E=Pel*h/1000, spesa=E*cost, emiss=E*co2/1000;
+  const SFP=Pel/Q; // W/(m3/s)
+  let sc;
+  if(SFP<500)sc='SFP 1';else if(SFP<750)sc='SFP 2';else if(SFP<1250)sc='SFP 3';else if(SFP<2000)sc='SFP 4';else if(SFP<3000)sc='SFP 5';else if(SFP<4500)sc='SFP 6';else sc='SFP 7';
+  const sfpcls=SFP<1250?'ok':SFP<2000?'warn':'err';
+  document.getElementById('en-metrics').innerHTML=`
+    ${metric('Potenza utile aria',Pair.toFixed(1),'W','')}
+    ${metric('Potenza assorbita',Pel.toFixed(1),'W','')}
+    ${metric('SFP',Math.round(SFP),'W/(m³/s)',sfpcls)}
+    ${metric('Classe EN 13779',sc,'',sfpcls)}
+    ${metric('Energia annua',E.toFixed(0),'kWh/anno','')}
+    ${metric('Spesa annua',spesa.toFixed(0),'€/anno','')}
+    ${metric('Emissioni',emiss.toFixed(2),'t CO₂/anno','')}`;
+  const n=document.getElementById('en-note');n.className='note ok show';
+  n.innerHTML='SFP = potenza assorbita / portata. Ridurre la perdita di carico (sezioni più ampie, meno curve strette) abbassa direttamente SFP, energia e classe EN 13779 — voce rilevante nel calcolo SEE/EPC.';
+  document.getElementById('en-out').style.display='block';
+  saveState();
+}
+
+/* ---------- tabella info ξ ---------- */
+document.getElementById('xi-tbody').innerHTML=FITTINGS.map(f=>`<tr><td>${f.n}</td><td>${f.x}</td></tr>`).join('');
+
+/* ---------- persistenza ---------- */
+function collectState(){
+  const get=id=>{const e=document.getElementById(id);return e?e.value:null;};
+  const fits=[...document.querySelectorAll('[id^="fit"]')].map(r=>{const i=r.id.replace('fit','');return{t:get('ft'+i),x:get('fx'+i),n:get('fn'+i)};});
+  const trs=[...document.querySelectorAll('[id^="tr"]')].filter(t=>/^tr\d+$/.test(t.id)).map(t=>{const i=t.id.replace('tr','');return{Q:get('trQ'+i),D:get('trD'+i),L:get('trL'+i),X:get('trX'+i)};});
+  return{sz:{Q:get('sz-Q'),shape:get('sz-shape'),mode:get('sz-mode'),T:get('sz-T'),alt:get('sz-alt'),eps:get('sz-eps')},
+    pd:{Q:get('pd-Q'),D:get('pd-D'),L:get('pd-L'),T:get('pd-T'),alt:get('pd-alt'),eps:get('pd-eps')},fits,
+    rt:{T:get('rt-T'),alt:get('rt-alt')},trs,
+    en:{Q:get('en-Q'),dp:get('en-dp'),eta:get('en-eta'),h:get('en-h'),cost:get('en-cost'),co2:get('en-co2')}};
+}
+function saveState(){try{localStorage.setItem('aeraulico_v1',JSON.stringify(collectState()));}catch(e){}}
+function loadState(){
+  try{const s=JSON.parse(localStorage.getItem('aeraulico_v1'));if(!s)return;applyState(s);}catch(e){}
+}
+function applyState(s){
+  const set=(id,v)=>{const e=document.getElementById(id);if(e&&v!=null)e.value=v;};
+  if(s.sz){set('sz-Q',s.sz.Q);if(s.sz.shape){document.getElementById('sz-shape').value=s.sz.shape;}if(s.sz.mode){document.getElementById('sz-mode').value=s.sz.mode;}set('sz-T',s.sz.T);set('sz-alt',s.sz.alt);if(s.sz.eps)document.getElementById('sz-eps').value=s.sz.eps;}
+  renderDims();
+  if(s.pd){set('pd-Q',s.pd.Q);set('pd-D',s.pd.D);set('pd-L',s.pd.L);set('pd-T',s.pd.T);set('pd-alt',s.pd.alt);}
+  document.getElementById('pd-fits').innerHTML='';fitN=0;
+  if(s.fits&&s.fits.length){s.fits.forEach(f=>{addFit();const i=fitN-1;if(f.t!=null){document.getElementById('ft'+i).value=f.t;}set('fx'+i,f.x);set('fn'+i,f.n);});}
+  else addFit();
+  document.getElementById('rt-list').innerHTML='';trN=0;
+  if(s.rt){set('rt-T',s.rt.T);set('rt-alt',s.rt.alt);}
+  if(s.trs&&s.trs.length){s.trs.forEach(t=>addTratto(t));}else{for(let k=0;k<3;k++)addTratto();}
+  if(s.en){set('en-Q',s.en.Q);set('en-dp',s.en.dp);set('en-eta',s.en.eta);set('en-h',s.en.h);set('en-cost',s.en.cost);set('en-co2',s.en.co2);}
+}
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(collectState(),null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='dimensionamento-aeraulico.json';a.click();URL.revokeObjectURL(a.href);
+}
+function importJSON(ev){
+  const f=ev.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{applyState(JSON.parse(r.result));saveState();}catch(e){alert('File non valido');}};
+  r.readAsText(f);ev.target.value='';
+}
+
+/* ---------- init ---------- */
+renderDims();
+addFit();
+for(let k=0;k<3;k++)addTratto();
+loadState();
+</script>
+</body>
+</html>
